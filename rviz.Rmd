@@ -1,0 +1,369 @@
+---
+title: "**Data Visualization with R ggplot2**"
+author: "Andriy Gazin"
+date: "August 11, 2016"
+output: 
+  slidy_presentation:
+    theme: cerulean
+---
+#**Load the data**
+
+```{r eval=TRUE, echo=TRUE, message=FALSE}
+Sys.setlocale("LC_TIME", "en_US.UTF-8")
+weather <- read.csv("https://raw.githubusercontent.com/andriy-gazin/datasets/master/kyiv_weather_2015.csv",
+                    stringsAsFactors = FALSE)
+str(weather)
+```
+
+#**Inspect summary of the data**
+
+```{r eval=TRUE, echo=TRUE, message=FALSE}
+summary(weather)
+```
+
+#**Add new variables**
+
+```{r, message=FALSE}
+library(dplyr)
+library(lubridate)
+weather <- weather %>% 
+  mutate(date = as.POSIXct(date, tz = "UTC+2"),
+         month = month(date, label = TRUE, abbr = TRUE))
+
+for (i in 1:nrow(weather)) {
+if(weather$month[i] %in% c("Dec", "Jan", "Feb")) {weather$season[i] = "Winter"}
+else if(weather$month[i] %in% c("Mar", "Apr", "May")) {weather$season[i] = "Spring"}
+else if(weather$month[i] %in% c("Jun", "Jul", "Aug")) {weather$season[i] = "Summer"}
+else if(weather$month[i] %in% c("Sep", "Oct", "Nov")) {weather$season[i] = "Autumn"}
+}
+```
+
+#**ggplot2 compared to base**
+
+```{r, eval=TRUE, echo=TRUE, message=FALSE}
+plot(x = weather$temp, y = weather$hum)
+
+```
+
+```{r, eval=TRUE, echo=TRUE, message=FALSE}
+library(ggplot2)
+ggplot(weather)+geom_point(aes(x = temp, y = hum))
+
+```
+
+#**Layered grammar of graphics**
+
+**Every plot consists of:**
+
+* Data  
+* Aesthetic mappings  
+* Geometry  
+* Statistics  
+* Scales  
+* Theme  
+
+#**ggplot object**
+
+```{r, eval=FALSE}
+ggplot(weather, aes(x = temp))
+
+```
+
+```{r, eval=TRUE}
+g <- ggplot(weather, aes(x = temp))
+
+```
+
+#**What's in the box?**
+
+```{r}
+str(g)
+```
+
+#**Aesthetics**
+
+```{r, eval=TRUE, echo=TRUE, message=FALSE, cache=TRUE}
+ggplot(weather, aes(x = temp))
+
+```
+
+#**All aesthetics**
+
+```{r}
+ggplot2:::.all_aesthetics
+```
+
+#**Geometry**
+
+```{r}
+ls(pattern = '^geom_', env = as.environment('package:ggplot2'))
+
+```
+
+#**Data + Aesthetics + Geometry**
+
+```{r, eval=TRUE, echo=TRUE, message=FALSE}
+ggplot(weather, aes(x = temp))+
+  geom_histogram()+
+  geom_rug()
+```
+
+#**Histogram - Adjust number of bins**
+```{r}
+ggplot(weather, aes(x = temp))+
+  geom_histogram(bins = max(weather$temp) - min(weather$temp))
+```
+
+#**Histogram - Adjust binwidth**
+```{r}
+ggplot(weather, aes(x = temp))+
+  geom_histogram(binwidth = 1, fill = "brown", alpha = 0.75)
+```
+
+#**Histogram - Adjust binwidth & color by season**
+```{r}
+ggplot(weather, aes(x = temp, fill = season))+
+  geom_histogram(binwidth = 1, alpha = 0.75)
+```
+
+#**Histogram - Add scales**
+```{r}
+ggplot(weather, aes(x = temp, fill = season))+
+  geom_histogram(binwidth = 1, alpha = 0.75)+
+  scale_x_continuous(breaks = seq(min(weather$temp), max(weather$temp), 10),
+                     minor_breaks = FALSE)+
+  scale_fill_brewer(type = "qual", palette = 2)
+```
+
+#**Histogram - Change theme**
+```{r}
+ggplot(weather, aes(x = temp, fill = season))+
+  geom_histogram(binwidth = 1, alpha = 0.75)+
+  scale_x_continuous(breaks = seq(min(weather$temp), max(weather$temp), 10),
+                     minor_breaks = FALSE)+
+  scale_fill_brewer(type = "qual", palette = 2)+
+  theme_minimal()
+```
+
+#**Histogram - Change geometry**
+```{r}
+ggplot(weather, aes(x = temp, color = season))+
+  geom_freqpoly(binwidth = 1, alpha = 0.75, size = 1)+
+  scale_x_continuous(breaks = seq(min(weather$temp), max(weather$temp), 10),
+                     minor_breaks = FALSE)+
+  scale_color_brewer(type = "qual", palette = 2)+
+  theme_minimal()
+```
+
+#**Histogram - Change geometry once again**
+```{r}
+ggplot(weather, aes(x = temp, color = season))+
+  geom_density(alpha = 0.75, size = 1)+
+  scale_x_continuous(breaks = seq(min(weather$temp), max(weather$temp), 10),
+                     minor_breaks = FALSE)+
+  scale_color_brewer(type = "qual", palette = 2)+
+  theme_minimal()
+```
+
+#**Histogram - Facet**
+```{r}
+ggplot(weather, aes(x = temp))+
+  geom_histogram(binwidth = 1, alpha = 0.75)+
+  facet_wrap(~season, nrow = 2, ncol = 2)+
+  theme_minimal()
+```
+
+#**Boxplot**
+```{r}
+ggplot(weather)+
+  geom_boxplot(aes(x = 1, y = temp))
+```
+
+#**Boxplot - Add jitter points**
+```{r}
+ggplot(weather, aes(x = 1, y = temp))+
+  geom_jitter(alpha = 0.1, color = 'gray50')+
+  geom_boxplot(fill = NA)
+  
+```
+
+#**Boxplot - Adjust width**
+```{r}
+ggplot(weather, aes(x = 1, y = temp))+
+  geom_jitter(alpha = 0.05, color = 'gray40', width = 0.2, height = 0.1)+
+  geom_boxplot(width = 0.2, fill = NA, size = 0.75, color = 'darkred')
+  
+```
+
+#**Boxplot - Spit by month**
+```{r}
+ggplot(weather, aes(x = month, y = temp))+
+  geom_jitter(alpha = 0.05, color = 'gray40', height = 0.1)+
+  geom_boxplot(fill = NA, color = 'darkred')
+  
+```
+
+#**Boxplot - Spit by season**
+```{r}
+ggplot(weather, aes(x = season, y = temp))+
+  geom_jitter(alpha = 0.05, color = 'gray40', height = 0.1)+
+  geom_boxplot(fill = NA, color = '#b02350')
+  
+```
+
+#**Boxplot - Spit by season correctrly**
+```{r}
+weather$season <- factor(weather$season, levels = c('Winter', 'Spring', 'Summer', 'Autumn'),
+                         ordered = TRUE)
+
+ggplot(weather, aes(x = season, y = temp))+
+  geom_jitter(alpha = 0.05, color = 'gray40', height = 0.1)+
+  geom_boxplot(fill = NA, color = '#b02350')
+  
+```
+
+#**Boxplot - Change geometry**
+```{r}
+ggplot(weather, aes(x = season, y = temp))+
+  geom_violin()
+  
+```
+
+#**Scatterplot**
+```{r}
+ggplot(weather, aes(temp, hum))+
+  geom_point()
+```
+
+#**Scatterplot - Color by season**
+```{r}
+ggplot(weather, aes(temp, hum, color = season), alpha = 0.5)+
+  geom_point()
+```
+
+#**Scatterplot - Change colorscale**
+```{r}
+ggplot(weather, aes(temp, hum, color = season))+
+  geom_jitter(alpha = 0.5)+
+  scale_color_brewer(type = 'qual', palette = 2)
+```
+
+#**Scatterplot - Add regression line**
+```{r}
+ggplot(weather, aes(temp, hum, color = season))+
+  geom_jitter(alpha = 0.5)+
+  geom_smooth(method = "lm")+
+  scale_color_brewer(type = 'qual', palette = 2)
+```
+
+#**Scatterplot - Add regression line**
+```{r}
+ggplot(weather, aes(temp, hum))+
+  geom_jitter(aes(color = season), alpha = 0.5)+
+  geom_smooth(method = "lm")+
+  scale_color_brewer(type = 'qual', palette = 2)
+```
+
+#**Scatterplot - Facet**
+```{r}
+ggplot(weather, aes(temp, hum))+
+  geom_jitter(alpha = 0.25, color = 'gray50')+
+  geom_smooth(method = "lm", se = FALSE, color = 'brown')+
+  facet_wrap(~season)
+```
+
+#**Scatterplot - Change geometry**
+```{r}
+ggplot(weather, aes(temp, hum))+
+  geom_count(alpha = 0.25, color = 'gray50')+
+  geom_smooth(method = "lm", se = FALSE, color = 'brown')+
+  facet_wrap(~season)
+```
+
+#**Scatterplot - Change geometry**
+```{r}
+ggplot(weather, aes(temp, hum))+
+  geom_density2d(alpha = 0.50)+
+  facet_wrap(~season)
+```
+
+#**Scatterplot - Change geometry**
+```{r}
+ggplot(weather, aes(temp, hum))+
+  geom_hex(alpha = 0.50)+
+  viridis::scale_fill_viridis()+
+  facet_wrap(~season)
+```
+
+#**Line chart**
+```{r}
+ggplot(weather, aes(date, temp))+
+  geom_line()
+```
+
+#**Line chart - Facet**
+```{r}
+ggplot(weather, aes(date, temp))+
+  geom_line()+
+  facet_wrap(~month, scales = "free_x", nrow = 4, ncol = 3)
+```
+
+#**Line chart - Aggregate data**
+```{r}
+weatherAgr <- weather %>% 
+  mutate(date = as.Date(date)) %>% 
+  group_by(date) %>% 
+  summarise(min = min(temp),
+            max = max(temp),
+            temp = mean(temp))
+
+ggplot(weatherAgr, aes(date, temp))+
+  geom_line()
+```
+
+#**Line chart - Add scales**
+```{r}
+ggplot(weatherAgr, aes(date, temp, color = temp))+
+  geom_line()+
+  viridis::scale_color_viridis()+
+  scale_x_date(date_breaks = "1 month", date_labels = "%B")
+```
+
+#**Line chart - Change geometry**
+```{r}
+ggplot(weatherAgr)+
+  geom_linerange(aes(x = date, ymin = min, ymax = max, color = temp))+
+  viridis::scale_color_viridis()+
+  scale_x_date(date_breaks = "1 month", date_labels = "%B")+
+  theme_minimal()
+```
+
+#**Line chart - Change coordinate system**
+```{r}
+ggplot(weatherAgr)+
+  geom_linerange(aes(x = date, ymin = min, ymax = max, color = temp))+
+  viridis::scale_color_viridis()+
+  scale_x_date(date_breaks = "1 month", date_labels = "%B")+
+  coord_polar()+
+  theme_minimal()
+```
+
+#**Bar chart**
+```{r}
+conditions <- weather %>% 
+  group_by(cond) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count)) %>% 
+  filter(count > 100)
+
+ggplot(conditions, aes(cond, count))+
+  geom_bar(stat = "identity")
+```
+
+#**Bar chart - Sort & make horizontal**
+```{r}
+ggplot(conditions, aes(reorder(cond, count), count))+
+  geom_bar(stat = "identity", fill = 'brown')+
+  coord_flip()+
+  ggthemes::theme_fivethirtyeight()
+```
